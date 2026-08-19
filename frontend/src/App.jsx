@@ -12,8 +12,17 @@ import UsersPage from './pages/UsersPage';
 import AuditLogsPage from './pages/AuditLogsPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 
+function FullScreenSpinner() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-dark)' }}>
+      <div className="spinner" style={{ width: 32, height: 32 }} />
+    </div>
+  );
+}
+
 function ProtectedLayout() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return <FullScreenSpinner />;
   if (!user) return <Navigate to="/login" replace />;
   return (
     <div className="layout">
@@ -26,20 +35,23 @@ function ProtectedLayout() {
 }
 
 function AdminRoute({ children }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return <FullScreenSpinner />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== 'Admin') return <Navigate to="/unauthorized" replace />;
   return children;
 }
 
 function PublicRoute({ children }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return <FullScreenSpinner />;
   if (user) return <Navigate to="/dashboard" replace />;
   return children;
 }
 
 function RootRoute() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return <FullScreenSpinner />;
   if (user) return <Navigate to="/dashboard" replace />;
   return <LandingPage />;
 }
