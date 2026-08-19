@@ -425,7 +425,7 @@ export default function PatientsPage() {
   const PAGE_SIZE = 20;
 
   // Verify write permission
-  const canWrite = user?.role === 'Admin' || user?.role === 'CareCoordinator';
+  const canWrite = user?.role === 'Admin' || user?.role === 'CareCoordinator' || user?.role === 'Doctor';
 
   const fetchPatients = async () => {
     setLoading(true);

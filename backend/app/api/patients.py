@@ -17,7 +17,7 @@ router = APIRouter()
 
 # Authorizations
 ALL_ROLES = ["Admin", "Doctor", "CareCoordinator"]
-WRITE_ROLES = ["Admin", "CareCoordinator"]
+WRITE_ROLES = ["Admin", "CareCoordinator", "Doctor"]
 ADMIN_ONLY = ["Admin"]
 
 @router.get("", response_model=PatientListResponse, dependencies=[Depends(RoleChecker(ALL_ROLES))])
