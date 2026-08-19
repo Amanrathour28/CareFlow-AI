@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, Users, FileText, CheckSquare, LogOut, Activity
@@ -24,7 +24,7 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-logo">
+      <Link to="/dashboard" className="sidebar-logo" title="CareFlow AI Dashboard" style={{ textDecoration: 'none', color: 'inherit', display: 'block', cursor: 'pointer' }}>
         <div className="logo-mark">
           <div className="logo-icon">🏥</div>
           <div>
@@ -32,7 +32,7 @@ export default function Sidebar() {
             <div className="logo-sub">Healthcare Intelligence</div>
           </div>
         </div>
-      </div>
+      </Link>
 
       <nav className="sidebar-nav">
         <div className="nav-section-label">Navigation</div>
@@ -40,7 +40,7 @@ export default function Sidebar() {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end={to === '/dashboard'}
             className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           >
             <Icon className="nav-icon" />
@@ -52,7 +52,7 @@ export default function Sidebar() {
         <div style={{ padding: '8px 12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#4b5563' }}>
             <Activity size={14} style={{ color: '#10b981' }} />
-            <span>API</span>
+            <span>API Online</span>
             <div style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
           </div>
         </div>

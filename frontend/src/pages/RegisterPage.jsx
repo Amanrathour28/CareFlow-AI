@@ -51,12 +51,12 @@ export default function RegisterPage() {
       <div className="auth-bg-orb" style={{ width: 300, height: 300, background: '#06b6d4', bottom: -50, left: -50 }} />
 
       <div className="auth-card">
-        <div className="auth-logo">
+        <Link to="/" title="Go to CareFlow AI Homepage" style={{ textDecoration: 'none', color: 'inherit' }} className="auth-logo">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🏥</div>
             <div style={{ fontSize: 20, fontWeight: 800, background: 'linear-gradient(135deg, #6366f1, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>CareFlow AI</div>
           </div>
-        </div>
+        </Link>
 
         <h1 className="auth-title">Create account</h1>
         <p className="auth-subtitle">Join the CareFlow AI platform</p>

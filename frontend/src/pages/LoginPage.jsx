@@ -47,7 +47,7 @@ export default function LoginPage() {
       <div className="auth-bg-orb" style={{ width: 400, height: 400, background: '#06b6d4', bottom: -100, right: -100 }} />
 
       <div className="auth-card">
-        <div className="auth-logo">
+        <Link to="/" title="Go to CareFlow AI Homepage" style={{ textDecoration: 'none', color: 'inherit' }} className="auth-logo">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
             <div style={{
               width: 44, height: 44, borderRadius: 12,
@@ -60,7 +60,7 @@ export default function LoginPage() {
               <div style={{ fontSize: 10, color: '#4b5563', letterSpacing: 1, textTransform: 'uppercase' }}>Healthcare Intelligence</div>
             </div>
           </div>
-        </div>
+        </Link>
 
         <h1 className="auth-title">Welcome back</h1>
         <p className="auth-subtitle">Sign in to your CareFlow dashboard</p>
