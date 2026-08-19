@@ -50,3 +50,10 @@ class Token(BaseModel):
 class TokenPayload(BaseModel):
     sub: Optional[str] = None
     role: Optional[str] = None
+
+class OTPRequest(BaseModel):
+    email: str = Field(..., description="Gmail ID or email to send OTP")
+
+class OTPVerify(BaseModel):
+    email: str = Field(..., description="Gmail ID or email")
+    otp: str = Field(..., min_length=6, max_length=6, description="6-digit verification code")
