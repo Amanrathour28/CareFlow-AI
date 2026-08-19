@@ -2,11 +2,28 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../api/services';
 
-const ROLES = ['Admin', 'Doctor', 'CareCoordinator'];
+const ROLES = ['Doctor', 'CareCoordinator', 'Admin'];
+
+// Maps raw backend error strings to friendly, specific messages
+function parseRegisterError(err) {
+  const detail = err.response?.data?.detail || '';
+  const status = err.response?.status;
+  if (status === 0 || err.code === 'ERR_NETWORK') {
+    return 'Cannot reach the server. Please check your internet connection.';
+  }
+  if (typeof detail === 'string') {
+    if (detail.includes('Username already registered')) return 'This username is already taken. Please choose a different one.';
+    if (detail.includes('Email already registered')) return 'This email is already registered. Try signing in instead.';
+    if (detail.includes('Invalid role')) return 'Please select a valid role from the dropdown.';
+    if (detail) return detail;
+  }
+  if (status === 422) return 'Please fill in all required fields correctly (e.g. a valid email address).';
+  return 'Registration failed. Please check your details and try again.';
+}
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: '', email: '', password: '', role: 'CareCoordinator' });
+  const [form, setForm] = useState({ username: '', email: '', password: '', role: 'Doctor' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,7 +35,7 @@ export default function RegisterPage() {
       await authApi.register(form);
       navigate('/login');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
+      setError(parseRegisterError(err));
     } finally {
       setLoading(false);
     }
@@ -45,7 +62,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit}>
           <div className="input-group">
             <label className="input-label">Username</label>
-            <input type="text" placeholder="Choose a username" value={form.username}
+            <input type="text" placeholder="Choose a unique username" value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })} required />
           </div>
           <div className="input-group">
@@ -55,13 +72,13 @@ export default function RegisterPage() {
           </div>
           <div className="input-group">
             <label className="input-label">Password</label>
-            <input type="password" placeholder="Create a password" value={form.password}
+            <input type="password" placeholder="Create a strong password" value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           </div>
           <div className="input-group">
             <label className="input-label">Role</label>
             <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+              {ROLES.map(r => <option key={r} value={r}>{r === 'CareCoordinator' ? 'Care Coordinator' : r}</option>)}
             </select>
           </div>
 

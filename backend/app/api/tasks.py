@@ -13,8 +13,8 @@ from app.schemas.task import (
 
 router = APIRouter()
 
-# Restrict task actions to Care Coordinators and Admins
-ALLOWED_ROLES = ["Admin", "CareCoordinator"]
+# All authenticated clinical roles can manage tasks
+ALLOWED_ROLES = ["Admin", "CareCoordinator", "Doctor"]
 
 @router.get("", response_model=TaskListResponse, dependencies=[Depends(RoleChecker(ALLOWED_ROLES))])
 def list_tasks(

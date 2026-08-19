@@ -2,6 +2,23 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+// Maps raw backend error strings to friendly, specific messages
+function parseLoginError(err) {
+  const detail = err.response?.data?.detail || '';
+  const status = err.response?.status;
+  if (status === 401 || detail.toLowerCase().includes('incorrect') || detail.toLowerCase().includes('password')) {
+    return 'Incorrect username or password. Please try again.';
+  }
+  if (status === 400 && detail.toLowerCase().includes('inactive')) {
+    return 'Your account is inactive. Please contact your administrator.';
+  }
+  if (status === 0 || err.code === 'ERR_NETWORK') {
+    return 'Cannot reach the server. Please check your internet connection.';
+  }
+  if (detail) return detail;
+  return 'Sign in failed. Please try again.';
+}
+
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -17,7 +34,7 @@ export default function LoginPage() {
       await login(form);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid credentials. Please try again.');
+      setError(parseLoginError(err));
     } finally {
       setLoading(false);
     }
@@ -46,16 +63,16 @@ export default function LoginPage() {
         </div>
 
         <h1 className="auth-title">Welcome back</h1>
-        <p className="auth-subtitle">Sign in to your coordinator dashboard</p>
+        <p className="auth-subtitle">Sign in to your CareFlow dashboard</p>
 
         {error && <div className="auth-error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="input-group">
-            <label className="input-label">Username</label>
+            <label className="input-label">Username or Email</label>
             <input
               type="text"
-              placeholder="Enter your username"
+              placeholder="Enter your username or email"
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
               required
