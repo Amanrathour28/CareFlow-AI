@@ -18,10 +18,17 @@ class Patient(Base):
     email: Mapped[str] = mapped_column(String(100), nullable=False)
     address: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     medical_history_summary: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    
+    # Resource-level authorization assignments
+    assigned_doctor_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    assigned_caregiver_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
+    assigned_doctor: Mapped[Optional["User"]] = relationship("User", foreign_keys=[assigned_doctor_id])
+    assigned_caregiver: Mapped[Optional["User"]] = relationship("User", foreign_keys=[assigned_caregiver_id])
     insurance: Mapped[Optional["Insurance"]] = relationship(
         "Insurance", back_populates="patient", uselist=False, cascade="all, delete-orphan"
     )
@@ -44,12 +51,11 @@ class Insurance(Base):
     insurance_provider: Mapped[str] = mapped_column(String(100), nullable=False)
     policy_number: Mapped[str] = mapped_column(String(50), nullable=False)
     group_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    plan_type: Mapped[str] = mapped_column(String(20), default="PPO", nullable=False)  # PPO, HMO, EPO
-    status: Mapped[str] = mapped_column(String(20), default="Active", nullable=False)  # Active, Inactive
+    plan_type: Mapped[str] = mapped_column(String(20), default="PPO", nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="Active", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
-    # Relationships
     patient: Mapped["Patient"] = relationship("Patient", back_populates="insurance")
 
 
@@ -61,10 +67,9 @@ class Medication(Base):
     drug_name: Mapped[str] = mapped_column(String(100), nullable=False)
     dosage: Mapped[str] = mapped_column(String(50), nullable=False)
     frequency: Mapped[str] = mapped_column(String(50), nullable=False)
-    status: Mapped[str] = mapped_column(String(20), default="Active", nullable=False)  # Active, Discontinued
+    status: Mapped[str] = mapped_column(String(20), default="Active", nullable=False)
     prescribed_date: Mapped[date] = mapped_column(Date, nullable=False)
 
-    # Relationships
     patient: Mapped["Patient"] = relationship("Patient", back_populates="medications")
 
 
@@ -77,8 +82,7 @@ class LaboratoryResult(Base):
     test_value: Mapped[str] = mapped_column(String(50), nullable=False)
     unit: Mapped[str] = mapped_column(String(20), nullable=False)
     reference_range: Mapped[str] = mapped_column(String(50), nullable=False)
-    status: Mapped[str] = mapped_column(String(20), default="Normal", nullable=False)  # Normal, Abnormal
+    status: Mapped[str] = mapped_column(String(20), default="Normal", nullable=False)
     test_date: Mapped[date] = mapped_column(Date, nullable=False)
 
-    # Relationships
     patient: Mapped["Patient"] = relationship("Patient", back_populates="laboratory_results")

@@ -10,10 +10,12 @@ from app.core.config import settings
 from app.core.security import ALGORITHM
 from app.database.session import get_db
 from app.repositories.user import user_repository
-from app.models.user import User
+from app.models.user import User, UserRole
+from app.models.patient import Patient
+from app.models.task import Task
+from app.models.referral import Referral
 from app.schemas.user import TokenPayload
 
-# OAuth2 scheme that looks for a bearer token in the Authorization header
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/login"
 )
@@ -63,7 +65,7 @@ def get_current_active_user(
     return current_user
 
 class RoleChecker:
-    """Dependency class to implement Role-Based Access Control checks."""
+    """Dependency class to enforce Role-Based Access Control checks."""
     def __init__(self, allowed_roles: List[str]):
         self.allowed_roles = allowed_roles
 
@@ -71,6 +73,55 @@ class RoleChecker:
         if user.role not in self.allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not enough permissions to perform this operation"
+                detail=f"Not enough permissions. Required role: {', '.join(self.allowed_roles)}"
             )
         return user
+
+
+# Resource-Level Access Verification Dependencies
+
+def verify_patient_access(patient_id: uuid.UUID, db: Session, user: User) -> Patient:
+    """Resource-level verification: Admin has full access, Doctor/Caregiver must be assigned."""
+    patient = db.get(Patient, patient_id)
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient record not found")
+
+    if user.role == UserRole.ADMIN.value:
+        return patient
+
+    if user.role == UserRole.DOCTOR.value:
+        # Access allowed if assigned to this doctor or not yet assigned
+        if patient.assigned_doctor_id and patient.assigned_doctor_id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access Forbidden: You are not assigned as the attending doctor for this patient record."
+            )
+        return patient
+
+    if user.role == UserRole.CAREGIVER.value:
+        if patient.assigned_caregiver_id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access Forbidden: You are not assigned as the caregiver for this patient record."
+            )
+        return patient
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access Forbidden")
+
+
+def verify_task_access(task_id: uuid.UUID, db: Session, user: User) -> Task:
+    """Resource-level verification for Task modifications."""
+    task = db.get(Task, task_id)
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+
+    if user.role == UserRole.ADMIN.value:
+        return task
+
+    if task.assigned_to_user_id and task.assigned_to_user_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access Forbidden: You are not assigned to modify this task."
+        )
+
+    return task

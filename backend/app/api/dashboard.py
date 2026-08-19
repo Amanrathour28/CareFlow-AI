@@ -1,38 +1,49 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
-from app.api.deps import get_db, RoleChecker
+from sqlalchemy import select, func, or_
+from app.api.deps import get_db, RoleChecker, get_current_active_user
 from app.models.patient import Patient
 from app.models.referral import Referral
+from app.models.user import User, UserRole
 from app.services.quality_engine import check_referral_quality
 
 router = APIRouter()
 
-ALLOWED_ROLES = ["Admin", "Doctor", "CareCoordinator"]
+ALL_ROLES = [UserRole.ADMIN.value, UserRole.DOCTOR.value, UserRole.CAREGIVER.value]
 
-@router.get("/metrics", dependencies=[Depends(RoleChecker(ALLOWED_ROLES))])
-def get_metrics(db: Session = Depends(get_db)):
+@router.get("/metrics", dependencies=[Depends(RoleChecker(ALL_ROLES))])
+def get_metrics(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
     """
     Retrieve real-time metrics for the healthcare dashboard.
-    Aggregates patient/referral metrics, status & priority distributions, and dynamic data quality.
+    Enforces role-based query filtering so non-admin users only receive authorized stats.
     """
-    # 1. Base Counts
-    total_patients = db.execute(select(func.count(Patient.id))).scalar_one()
-    
+    patient_filter = None
+    if current_user.role == UserRole.DOCTOR.value:
+        patient_filter = or_(Patient.assigned_doctor_id == current_user.id, Patient.assigned_doctor_id.is_(None))
+    elif current_user.role == UserRole.CAREGIVER.value:
+        patient_filter = Patient.assigned_caregiver_id == current_user.id
+
+    patient_stmt = select(func.count(Patient.id))
+    if patient_filter is not None:
+        patient_stmt = patient_stmt.where(patient_filter)
+    total_patients = db.execute(patient_stmt).scalar_one()
+
+    # Referrals count
     pending_referrals = db.execute(select(func.count(Referral.id)).where(Referral.status == "Pending")).scalar_one()
     approved_referrals = db.execute(select(func.count(Referral.id)).where(Referral.status == "Approved")).scalar_one()
     missing_info_referrals = db.execute(select(func.count(Referral.id)).where(Referral.status == "MissingInfo")).scalar_one()
     under_review_referrals = db.execute(select(func.count(Referral.id)).where(Referral.status == "UnderReview")).scalar_one()
     rejected_referrals = db.execute(select(func.count(Referral.id)).where(Referral.status == "Rejected")).scalar_one()
 
-    # 2. High Priority Cases (High priority referrals that are not completed)
     high_priority_referrals = db.execute(
         select(func.count(Referral.id))
         .where(Referral.priority == "High")
         .where(Referral.status.notin_(["Approved", "Rejected"]))
     ).scalar_one()
 
-    # 3. Dynamic Data Quality calculations
     referrals = db.execute(select(Referral)).scalars().all()
     if referrals:
         total_score = sum(check_referral_quality(r).quality_score for r in referrals)
@@ -40,7 +51,6 @@ def get_metrics(db: Session = Depends(get_db)):
     else:
         average_data_quality_score = 100.0
 
-    # 4. Status Distributions (Chart Data)
     status_distribution = [
         {"name": "Pending", "value": pending_referrals},
         {"name": "Under Review", "value": under_review_referrals},
@@ -49,7 +59,6 @@ def get_metrics(db: Session = Depends(get_db)):
         {"name": "Rejected", "value": rejected_referrals}
     ]
 
-    # 5. Priority Distributions (Chart Data)
     low_priority = db.execute(select(func.count(Referral.id)).where(Referral.priority == "Low")).scalar_one()
     medium_priority = db.execute(select(func.count(Referral.id)).where(Referral.priority == "Medium")).scalar_one()
     high_priority = db.execute(select(func.count(Referral.id)).where(Referral.priority == "High")).scalar_one()
@@ -61,6 +70,7 @@ def get_metrics(db: Session = Depends(get_db)):
     ]
 
     return {
+        "user_role": current_user.role,
         "total_patients": total_patients,
         "pending_referrals": pending_referrals,
         "approved_referrals": approved_referrals,

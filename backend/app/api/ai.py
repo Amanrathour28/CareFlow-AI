@@ -3,15 +3,17 @@ from sqlalchemy.orm import Session
 import uuid
 from pydantic import BaseModel, Field
 
-from app.api.deps import get_db, RoleChecker
+from app.api.deps import get_db, RoleChecker, get_current_active_user, verify_patient_access
 from app.services.referral import referral_service
 from app.services.ai_agent import ai_agent_service
+from app.services.audit import log_audit_event
+from app.models.user import User, UserRole
 from app.schemas.referral import AIAnalysisResponse
 
 router = APIRouter()
 
-# Allow Care Coordinators and Admins to trigger AI analysis
-ALLOWED_ROLES = ["Admin", "CareCoordinator"]
+# Strictly Admin and Doctor can trigger AI analysis. Caregiver receives 403 Forbidden.
+ALLOWED_ROLES = [UserRole.ADMIN.value, UserRole.DOCTOR.value]
 
 class AIAnalysisRequest(BaseModel):
     referral_id: uuid.UUID = Field(..., description="UUID of the referral to analyze")
@@ -19,11 +21,12 @@ class AIAnalysisRequest(BaseModel):
 @router.post("/analyze-referral", response_model=AIAnalysisResponse, dependencies=[Depends(RoleChecker(ALLOWED_ROLES))])
 def analyze_referral(
     payload: AIAnalysisRequest,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
-    Trigger AI analysis for a given referral ID.
-    Retrieves referral details and patient profile, runs checks, and saves structured JSON report.
+    Trigger AI analysis for a referral (Admin and Doctor only).
+    Caregivers attempting to trigger AI analysis will receive HTTP 403 Forbidden.
     """
     try:
         referral = referral_service.get_referral(db, referral_id=payload.referral_id)
@@ -33,5 +36,12 @@ def analyze_referral(
             detail=str(e)
         )
         
+    # Check resource access to referral's patient
+    verify_patient_access(patient_id=referral.patient_id, db=db, user=current_user)
+
     analysis = ai_agent_service.analyze_referral(db, referral)
+    
+    # Audit log
+    log_audit_event(db, user_id=current_user.id, action="ai_analysis_requested", resource_type="referrals", resource_id=referral.id)
+    
     return analysis

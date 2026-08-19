@@ -64,11 +64,18 @@ function AIPanel({ analysis, error }) {
 }
 
 function ReferralDetailModal({ referral, onClose }) {
+  const { user } = useAuth();
   const [analysis, setAnalysis] = useState(referral?.ai_analysis || null);
   const [analyzing, setAnalyzing] = useState(false);
   const [aiError, setAiError] = useState('');
 
+  const canRunAI = user?.role === 'Admin' || user?.role === 'Doctor';
+
   const runAnalysis = async () => {
+    if (!canRunAI) {
+      setAiError('Access Restricted (HTTP 403): AI Referral Analysis is restricted to Doctor and Admin roles.');
+      return;
+    }
     setAnalyzing(true);
     setAiError('');
     try {

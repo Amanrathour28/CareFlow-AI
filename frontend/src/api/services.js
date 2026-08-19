@@ -8,6 +8,21 @@ export const authApi = {
   me: () => api.get('/auth/me'),
 };
 
+export const usersApi = {
+  list: (params) => api.get('/users', { params }),
+  create: (data) => api.post('/users', data),
+  update: (id, data) => api.patch(`/users/${id}`, data),
+};
+
+export const auditApi = {
+  list: (params) => api.get('/audit-logs', { params }),
+};
+
+export const assignmentsApi = {
+  assignPatient: (data) => api.post('/assignments/patient', data),
+  assignTask: (data) => api.post('/assignments/task', data),
+};
+
 export const patientsApi = {
   list: (params) => api.get('/patients', { params }),
   get: (id) => api.get(`/patients/${id}`),

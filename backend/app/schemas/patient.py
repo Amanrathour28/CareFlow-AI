@@ -73,6 +73,8 @@ class PatientBase(BaseModel):
     email: EmailStr
     address: Optional[str] = Field(None, max_length=255)
     medical_history_summary: Optional[str] = Field(None, max_length=1000)
+    assigned_doctor_id: Optional[uuid.UUID] = Field(None, description="UUID of assigned Doctor")
+    assigned_caregiver_id: Optional[uuid.UUID] = Field(None, description="UUID of assigned Caregiver")
 
 class PatientCreate(PatientBase):
     insurance: Optional[InsuranceCreate] = None
@@ -88,6 +90,8 @@ class PatientUpdate(BaseModel):
     email: Optional[EmailStr] = None
     address: Optional[str] = Field(None, max_length=255)
     medical_history_summary: Optional[str] = Field(None, max_length=1000)
+    assigned_doctor_id: Optional[uuid.UUID] = None
+    assigned_caregiver_id: Optional[uuid.UUID] = None
 
 class PatientResponse(PatientBase):
     id: uuid.UUID
@@ -102,7 +106,7 @@ class PatientDetailResponse(PatientResponse):
     insurance: Optional[InsuranceResponse] = None
     medications: List[MedicationResponse] = []
     laboratory_results: List[LabResultResponse] = []
-    data_quality: Optional[DataQualityReport] = None   # populated on create/validate
+    data_quality: Optional[DataQualityReport] = None
 
     model_config = {
         "from_attributes": True

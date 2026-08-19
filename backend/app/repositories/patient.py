@@ -4,17 +4,27 @@ from sqlalchemy import or_, select, func
 from sqlalchemy.orm import Session
 from app.models.patient import Patient, Insurance, Medication, LaboratoryResult
 from app.schemas.patient import PatientCreate, PatientUpdate
+from app.models.user import User, UserRole
 
 class PatientRepository:
     def get_by_id(self, db: Session, patient_id: uuid.UUID) -> Optional[Patient]:
-        """Fetch a single patient record by UUID, including all relationships automatically loaded."""
+        """Fetch a single patient record by UUID."""
         return db.get(Patient, patient_id)
 
     def list_patients(
-        self, db: Session, *, skip: int = 0, limit: int = 100, search: Optional[str] = None
+        self, db: Session, *, user: User, skip: int = 0, limit: int = 100, search: Optional[str] = None
     ) -> List[Patient]:
-        """Fetch a paginated list of patients, with optional case-insensitive search on names and email."""
+        """Fetch a paginated list of patients filtered at the database level by user role & assignments."""
         statement = select(Patient)
+
+        # Database Query-Level Access Filtering based on Role & Assignment
+        if user.role == UserRole.DOCTOR.value:
+            statement = statement.where(
+                or_(Patient.assigned_doctor_id == user.id, Patient.assigned_doctor_id.is_(None))
+            )
+        elif user.role == UserRole.CAREGIVER.value:
+            statement = statement.where(Patient.assigned_caregiver_id == user.id)
+
         if search:
             search_filter = f"%{search}%"
             statement = statement.where(
@@ -24,12 +34,21 @@ class PatientRepository:
                     Patient.email.ilike(search_filter)
                 )
             )
+
         statement = statement.order_by(Patient.last_name.asc()).offset(skip).limit(limit)
         return list(db.execute(statement).scalars().all())
 
-    def count_patients(self, db: Session, *, search: Optional[str] = None) -> int:
-        """Count total patients matching search query."""
+    def count_patients(self, db: Session, *, user: User, search: Optional[str] = None) -> int:
+        """Count total patients accessible to the user."""
         statement = select(func.count(Patient.id))
+
+        if user.role == UserRole.DOCTOR.value:
+            statement = statement.where(
+                or_(Patient.assigned_doctor_id == user.id, Patient.assigned_doctor_id.is_(None))
+            )
+        elif user.role == UserRole.CAREGIVER.value:
+            statement = statement.where(Patient.assigned_caregiver_id == user.id)
+
         if search:
             search_filter = f"%{search}%"
             statement = statement.where(
@@ -42,7 +61,7 @@ class PatientRepository:
         return db.execute(statement).scalar_one()
 
     def create_patient_with_details(self, db: Session, *, obj_in: PatientCreate) -> Patient:
-        """Create a patient record along with optional insurance, medications, and labs inside a transaction."""
+        """Create a patient record along with optional insurance, medications, and labs."""
         db_patient = Patient(
             first_name=obj_in.first_name,
             last_name=obj_in.last_name,
@@ -51,12 +70,13 @@ class PatientRepository:
             phone=obj_in.phone,
             email=obj_in.email,
             address=obj_in.address,
-            medical_history_summary=obj_in.medical_history_summary
+            medical_history_summary=obj_in.medical_history_summary,
+            assigned_doctor_id=obj_in.assigned_doctor_id,
+            assigned_caregiver_id=obj_in.assigned_caregiver_id
         )
         db.add(db_patient)
-        db.flush()  # Populates db_patient.id without committing
+        db.flush()
 
-        # Create nested insurance record if provided
         if obj_in.insurance:
             db_insurance = Insurance(
                 patient_id=db_patient.id,
@@ -68,7 +88,6 @@ class PatientRepository:
             )
             db.add(db_insurance)
 
-        # Create nested medication records if provided
         if obj_in.medications:
             for med in obj_in.medications:
                 db_med = Medication(
@@ -81,7 +100,6 @@ class PatientRepository:
                 )
                 db.add(db_med)
 
-        # Create nested laboratory records if provided
         if obj_in.laboratory_results:
             for lab in obj_in.laboratory_results:
                 db_lab = LaboratoryResult(
@@ -100,7 +118,7 @@ class PatientRepository:
         return db_patient
 
     def update(self, db: Session, *, db_obj: Patient, obj_in: PatientUpdate) -> Patient:
-        """Update core demographic fields of a patient."""
+        """Update core demographic & assignment fields of a patient."""
         update_data = obj_in.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(db_obj, field, value)
@@ -110,7 +128,7 @@ class PatientRepository:
         return db_obj
 
     def delete(self, db: Session, patient_id: uuid.UUID) -> Optional[Patient]:
-        """Delete a patient record and cascade delete associated nested records."""
+        """Delete a patient record."""
         db_obj = db.get(Patient, patient_id)
         if db_obj:
             db.delete(db_obj)

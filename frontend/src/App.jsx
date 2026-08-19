@@ -8,6 +8,9 @@ import DashboardPage from './pages/DashboardPage';
 import PatientsPage from './pages/PatientsPage';
 import ReferralsPage from './pages/ReferralsPage';
 import TasksPage from './pages/TasksPage';
+import UsersPage from './pages/UsersPage';
+import AuditLogsPage from './pages/AuditLogsPage';
+import UnauthorizedPage from './pages/UnauthorizedPage';
 
 function ProtectedLayout() {
   const { user } = useAuth();
@@ -20,6 +23,13 @@ function ProtectedLayout() {
       </main>
     </div>
   );
+}
+
+function AdminRoute({ children }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'Admin') return <Navigate to="/unauthorized" replace />;
+  return children;
 }
 
 function PublicRoute({ children }) {
@@ -42,12 +52,15 @@ export default function App() {
           <Route path="/" element={<RootRoute />} />
           <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
           
           <Route element={<ProtectedLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/patients" element={<PatientsPage />} />
             <Route path="/referrals" element={<ReferralsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
+            <Route path="/audit-logs" element={<AdminRoute><AuditLogsPage /></AdminRoute>} />
           </Route>
           
           <Route path="*" element={<Navigate to="/" replace />} />

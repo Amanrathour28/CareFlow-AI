@@ -407,14 +407,16 @@ export default function PatientsPage() {
   const { user } = useAuth();
   const [patients, setPatients] = useState([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
   const PAGE_SIZE = 20;
 
-  const canWrite = user?.role === 'Admin' || user?.role === 'CareCoordinator' || user?.role === 'Doctor';
+  const isAdmin = user?.role === 'Admin';
+  const canCreate = user?.role === 'Admin';
+  const canEdit = user?.role === 'Admin' || user?.role === 'Doctor';
 
   const fetchPatients = async () => {
     setLoading(true);
