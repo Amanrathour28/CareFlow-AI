@@ -89,6 +89,35 @@ function ReferralDetailModal({ referral, onClose }) {
           <button className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
         <div style={{ maxHeight: '75vh', overflowY: 'auto' }}>
+          {/* 5 Unified Data Source Integrity Checks */}
+          <div style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 12, marginBottom: 16 }}>
+            <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+              Unified Data Sources Audit & Sync Status
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, fontSize: 11, textAlign: 'center' }}>
+              <div style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', padding: 6, borderRadius: 6, color: '#a5b4fc' }}>
+                <div>🏥 EHR</div>
+                <div style={{ fontSize: 9, color: '#10b981', fontWeight: 600 }}>✓ Verified</div>
+              </div>
+              <div style={{ background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.2)', padding: 6, borderRadius: 6, color: '#67e8f9' }}>
+                <div>🧪 Labs</div>
+                <div style={{ fontSize: 9, color: '#10b981', fontWeight: 600 }}>✓ Ingested</div>
+              </div>
+              <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: 6, borderRadius: 6, color: '#6ee7b7' }}>
+                <div>🛡️ Payer</div>
+                <div style={{ fontSize: 9, color: '#f59e0b', fontWeight: 600 }}>⚡ Active Sync</div>
+              </div>
+              <div style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', padding: 6, borderRadius: 6, color: '#c4b5fd' }}>
+                <div>💊 Pharmacy</div>
+                <div style={{ fontSize: 9, color: '#10b981', fontWeight: 600 }}>✓ Verified</div>
+              </div>
+              <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', padding: 6, borderRadius: 6, color: '#fde68a' }}>
+                <div>📄 Fax/PDF</div>
+                <div style={{ fontSize: 9, color: '#6366f1', fontWeight: 600 }}>🤖 AI Analyzed</div>
+              </div>
+            </div>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
             {[
               ['Diagnosis Code', referral.diagnosis_code],

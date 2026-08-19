@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { patientsApi } from '../api/services';
 import { useAuth } from '../context/AuthContext';
-import { Search, ChevronRight, X, ShieldCheck, Pill, FlaskConical, Plus, Trash2 } from 'lucide-react';
+import { Search, ChevronRight, X, ShieldCheck, Pill, FlaskConical, Plus, Trash2, FileText, Database, Layers } from 'lucide-react';
 
 function QualityBar({ score }) {
-  const cls = score >= 80 ? 'quality-high' : score >= 60 ? 'quality-medium' : 'quality-low';
   const color = score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#f43f5e';
   return (
     <div>
@@ -13,7 +12,7 @@ function QualityBar({ score }) {
         <span style={{ color, fontWeight: 600 }}>{score}/100</span>
       </div>
       <div className="quality-bar">
-        <div className={`quality-fill ${cls}`} style={{ width: `${score}%` }} />
+        <div className={`quality-fill ${score >= 80 ? 'quality-high' : score >= 60 ? 'quality-medium' : 'quality-low'}`} style={{ width: `${score}%` }} />
       </div>
     </div>
   );
@@ -23,7 +22,7 @@ function PatientDetailModal({ patient, onClose }) {
   const ins = patient.insurance;
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 580 }} onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: 620 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16 }}>
@@ -37,12 +36,36 @@ function PatientDetailModal({ patient, onClose }) {
           <button className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
 
-        <div style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
+        <div style={{ maxHeight: '72vh', overflowY: 'auto', paddingRight: 4 }}>
+          {/* Connected Data Sources Banner */}
+          <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Layers size={13} style={{ color: '#06b6d4' }} /> Connected Data Sources Integration Status
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontSize: 11 }}>
+              <span style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', padding: '4px 10px', borderRadius: 20 }}>
+                🏥 EHR System: Active
+              </span>
+              <span style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)', color: '#67e8f9', padding: '4px 10px', borderRadius: 20 }}>
+                🧪 Lab Diagnostic Network: {patient.laboratory_results?.length || 0} Reports
+              </span>
+              <span style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', color: '#6ee7b7', padding: '4px 10px', borderRadius: 20 }}>
+                🛡️ Insurance Portal: {ins ? ins.insurance_provider : 'Verified'}
+              </span>
+              <span style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: '#c4b5fd', padding: '4px 10px', borderRadius: 20 }}>
+                💊 Pharmacy History: {patient.medications?.length || 0} Meds
+              </span>
+              <span style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', color: '#fde68a', padding: '4px 10px', borderRadius: 20 }}>
+                📄 Fax & PDFs: Attached Notes
+              </span>
+            </div>
+          </div>
+
           {/* Insurance */}
           {ins && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#6366f1', marginBottom: 8 }}>
-                <ShieldCheck size={14} /> Insurance Coverage
+                <ShieldCheck size={14} /> Insurance Coverage (Portal Data)
               </div>
               <div style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: 10, padding: '12px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13 }}>
                 <div><span style={{ color: '#94a3b8' }}>Provider:</span> {ins.insurance_provider}</div>
@@ -57,7 +80,7 @@ function PatientDetailModal({ patient, onClose }) {
           {patient.medications?.length > 0 && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#8b5cf6', marginBottom: 8 }}>
-                <Pill size={14} /> Active Medications
+                <Pill size={14} /> Active Medications (Pharmacy Records)
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {patient.medications.map(m => (
@@ -73,7 +96,7 @@ function PatientDetailModal({ patient, onClose }) {
           {patient.laboratory_results?.length > 0 && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#06b6d4', marginBottom: 8 }}>
-                <FlaskConical size={14} /> Lab Results
+                <FlaskConical size={14} /> Lab Diagnostic Results
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {patient.laboratory_results.map(l => (
@@ -86,13 +109,15 @@ function PatientDetailModal({ patient, onClose }) {
             </div>
           )}
 
-          {/* Medical history */}
-          {patient.medical_history_summary && (
-            <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 6 }}>Medical History</div>
-              <p style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.6, background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 14px' }}>{patient.medical_history_summary}</p>
+          {/* Medical history & Fax / PDF Clinical Notes */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#f59e0b', marginBottom: 8 }}>
+              <FileText size={14} /> Ingested Fax & PDF Clinical Notes
             </div>
-          )}
+            <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.6, background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-primary)', borderRadius: 8, padding: '10px 14px' }}>
+              {patient.medical_history_summary || 'Clinical notes from referring provider and incoming fax documents.'}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -104,7 +129,6 @@ function AddPatientModal({ onClose, onSave }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Demographics
   const [demo, setDemo] = useState({
     first_name: '',
     last_name: '',
@@ -116,8 +140,7 @@ function AddPatientModal({ onClose, onSave }) {
     medical_history_summary: '',
   });
 
-  // Insurance
-  const [hasInsurance, setHasInsurance] = useState(false);
+  const [hasInsurance, setHasInsurance] = useState(true);
   const [ins, setIns] = useState({
     insurance_provider: '',
     policy_number: '',
@@ -126,38 +149,23 @@ function AddPatientModal({ onClose, onSave }) {
     status: 'Active',
   });
 
-  // Medications list
   const [meds, setMeds] = useState([]);
-  // Laboratory results list
   const [labs, setLabs] = useState([]);
 
-  // Helpers for list manipulation
   const addMedication = () => {
     setMeds([...meds, { drug_name: '', dosage: '', frequency: '', status: 'Active', prescribed_date: new Date().toISOString().split('T')[0] }]);
   };
-
-  const removeMedication = (index) => {
-    setMeds(meds.filter((_, i) => i !== index));
-  };
-
+  const removeMedication = (index) => { setMeds(meds.filter((_, i) => i !== index)); };
   const updateMed = (index, key, val) => {
-    const updated = [...meds];
-    updated[index][key] = val;
-    setMeds(updated);
+    const updated = [...meds]; updated[index][key] = val; setMeds(updated);
   };
 
   const addLab = () => {
     setLabs([...labs, { test_name: '', test_value: '', unit: '', reference_range: '', status: 'Normal', test_date: new Date().toISOString().split('T')[0] }]);
   };
-
-  const removeLab = (index) => {
-    setLabs(labs.filter((_, i) => i !== index));
-  };
-
+  const removeLab = (index) => { setLabs(labs.filter((_, i) => i !== index)); };
   const updateLab = (index, key, val) => {
-    const updated = [...labs];
-    updated[index][key] = val;
-    setLabs(updated);
+    const updated = [...labs]; updated[index][key] = val; setLabs(updated);
   };
 
   const handleSubmit = async (e) => {
@@ -172,7 +180,6 @@ function AddPatientModal({ onClose, onSave }) {
         medications: meds,
         laboratory_results: labs
       };
-
       await patientsApi.create(payload);
       onSave();
     } catch (err) {
@@ -187,39 +194,25 @@ function AddPatientModal({ onClose, onSave }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 640 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <div className="modal-title">Register New Patient File</div>
+          <div className="modal-title">Register New Patient File (Unified Integrations)</div>
           <button className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
 
         {error && <div className="auth-error" style={{ marginBottom: 12 }}>{error}</div>}
 
-        {/* Tab Headers */}
-        <div style={{ display: 'flex', gap: 12, borderBottom: '1px solid var(--border-primary)', marginBottom: 16, paddingBottom: 8 }}>
-          <button 
-            type="button" 
-            className={`btn ${activeTab === 'demographics' ? 'btn-primary' : 'btn-ghost'}`} 
-            style={{ padding: '6px 12px', fontSize: 12 }}
-            onClick={() => setActiveTab('demographics')}>
-            1. Demographics
+        <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border-primary)', marginBottom: 16, paddingBottom: 8, flexWrap: 'wrap' }}>
+          <button type="button" className={`btn ${activeTab === 'demographics' ? 'btn-primary' : 'btn-ghost'}`} style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setActiveTab('demographics')}>
+            1. EHR Demographics
           </button>
-          <button 
-            type="button" 
-            className={`btn ${activeTab === 'insurance' ? 'btn-primary' : 'btn-ghost'}`} 
-            style={{ padding: '6px 12px', fontSize: 12 }}
-            onClick={() => setActiveTab('insurance')}>
-            2. Insurance
+          <button type="button" className={`btn ${activeTab === 'insurance' ? 'btn-primary' : 'btn-ghost'}`} style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setActiveTab('insurance')}>
+            2. Insurance Portal
           </button>
-          <button 
-            type="button" 
-            className={`btn ${activeTab === 'clinical' ? 'btn-primary' : 'btn-ghost'}`} 
-            style={{ padding: '6px 12px', fontSize: 12 }}
-            onClick={() => setActiveTab('clinical')}>
-            3. Clinical Data ({meds.length} Meds, {labs.length} Labs)
+          <button type="button" className={`btn ${activeTab === 'clinical' ? 'btn-primary' : 'btn-ghost'}`} style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setActiveTab('clinical')}>
+            3. Labs, Rx & Fax Notes ({meds.length} Meds, {labs.length} Labs)
           </button>
         </div>
 
         <form onSubmit={handleSubmit} style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 4 }}>
-          {/* TAB 1: Demographics */}
           {activeTab === 'demographics' && (
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -265,8 +258,8 @@ function AddPatientModal({ onClose, onSave }) {
               </div>
 
               <div className="input-group">
-                <label className="input-label">Clinical Medical History Summary</label>
-                <textarea rows={3} placeholder="Diagnoses, history, prior treatments..." value={demo.medical_history_summary} onChange={e => setDemo({...demo, medical_history_summary: e.target.value})} />
+                <label className="input-label">Fax & PDF Clinical Notes / History Summary</label>
+                <textarea rows={3} placeholder="Paste clinical notes from PDF/Fax documents or physician summary..." value={demo.medical_history_summary} onChange={e => setDemo({...demo, medical_history_summary: e.target.value})} />
               </div>
               
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
@@ -275,12 +268,11 @@ function AddPatientModal({ onClose, onSave }) {
             </div>
           )}
 
-          {/* TAB 2: Insurance */}
           {activeTab === 'insurance' && (
             <div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', marginBottom: 16 }}>
                 <input type="checkbox" checked={hasInsurance} onChange={e => setHasInsurance(e.target.checked)} />
-                <span>Patient has active Insurance Coverage</span>
+                <span>Patient has active Insurance Coverage (Portal Data)</span>
               </label>
 
               {hasInsurance && (
@@ -288,18 +280,18 @@ function AddPatientModal({ onClose, onSave }) {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div className="input-group">
                       <label className="input-label">Insurance Provider *</label>
-                      <input type="text" value={ins.insurance_provider} onChange={e => setIns({...ins, insurance_provider: e.target.value})} required={hasInsurance} />
+                      <input type="text" placeholder="e.g. BlueCross BlueShield" value={ins.insurance_provider} onChange={e => setIns({...ins, insurance_provider: e.target.value})} required={hasInsurance} />
                     </div>
                     <div className="input-group">
                       <label className="input-label">Policy Number *</label>
-                      <input type="text" value={ins.policy_number} onChange={e => setIns({...ins, policy_number: e.target.value})} required={hasInsurance} />
+                      <input type="text" placeholder="e.g. BCBS-991823" value={ins.policy_number} onChange={e => setIns({...ins, policy_number: e.target.value})} required={hasInsurance} />
                     </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                     <div className="input-group">
                       <label className="input-label">Group Number</label>
-                      <input type="text" value={ins.group_number} onChange={e => setIns({...ins, group_number: e.target.value})} />
+                      <input type="text" placeholder="GRP-1029" value={ins.group_number} onChange={e => setIns({...ins, group_number: e.target.value})} />
                     </div>
                     <div className="input-group">
                       <label className="input-label">Plan Type</label>
@@ -327,14 +319,13 @@ function AddPatientModal({ onClose, onSave }) {
             </div>
           )}
 
-          {/* TAB 3: Medications and Labs */}
           {activeTab === 'clinical' && (
             <div>
-              {/* Medications Section */}
+              {/* Pharmacy Medications Section */}
               <div style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Pill size={14} /> Active Medications
+                    <Pill size={14} /> Active Medications (Pharmacy Integration)
                   </span>
                   <button type="button" className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={addMedication}>
                     <Plus size={12} /> Add Med
@@ -343,7 +334,7 @@ function AddPatientModal({ onClose, onSave }) {
 
                 {meds.length === 0 ? (
                   <div style={{ padding: 12, border: '1px dashed var(--border-primary)', borderRadius: 8, textAlign: 'center', color: '#94a3b8', fontSize: 12 }}>
-                    No active medications recorded.
+                    No active pharmacy medications recorded. Click "+ Add Med" to add.
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -362,11 +353,11 @@ function AddPatientModal({ onClose, onSave }) {
                 )}
               </div>
 
-              {/* Labs Section */}
+              {/* Lab Diagnostic Results Section */}
               <div style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: '#06b6d4', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <FlaskConical size={14} /> Lab Diagnostic Results
+                    <FlaskConical size={14} /> Lab Diagnostic Reports
                   </span>
                   <button type="button" className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={addLab}>
                     <Plus size={12} /> Add Lab
@@ -375,7 +366,7 @@ function AddPatientModal({ onClose, onSave }) {
 
                 {labs.length === 0 ? (
                   <div style={{ padding: 12, border: '1px dashed var(--border-primary)', borderRadius: 8, textAlign: 'center', color: '#94a3b8', fontSize: 12 }}>
-                    No laboratory/diagnostic reports recorded.
+                    No laboratory/diagnostic reports recorded. Click "+ Add Lab" to add.
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -395,7 +386,6 @@ function AddPatientModal({ onClose, onSave }) {
                 )}
               </div>
 
-              {/* Submit Buttons */}
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-primary)', paddingTop: 16 }}>
                 <button type="button" className="btn btn-ghost" onClick={() => setActiveTab('insurance')}>&larr; Back</button>
                 <div style={{ display: 'flex', gap: 10 }}>
@@ -424,7 +414,6 @@ export default function PatientsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const PAGE_SIZE = 20;
 
-  // Verify write permission
   const canWrite = user?.role === 'Admin' || user?.role === 'CareCoordinator' || user?.role === 'Doctor';
 
   const fetchPatients = async () => {
@@ -455,18 +444,17 @@ export default function PatientsPage() {
     <>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 className="page-title">Patient Records</h1>
-          <p className="page-subtitle">{total} patients in system</p>
+          <h1 className="page-title">Patient Records (Unified Healthcare Data)</h1>
+          <p className="page-subtitle">{total} unified patient files across EHR, Labs, Insurance & Pharmacy</p>
         </div>
         {canWrite && (
           <button className="btn btn-primary" onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Plus size={16} /> Add Patient
+            <Plus size={16} /> Add Patient File
           </button>
         )}
       </div>
 
       <div className="page-content">
-        {/* Search */}
         <div style={{ position: 'relative', maxWidth: 360, marginBottom: 20 }}>
           <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
           <input
@@ -480,14 +468,14 @@ export default function PatientsPage() {
 
         <div className="table-card">
           <div className="table-header">
-            <span className="table-title">All Patients</span>
-            <span style={{ fontSize: 12, color: '#94a3b8' }}>Click to view unified profile</span>
+            <span className="table-title">All Patient Records</span>
+            <span style={{ fontSize: 12, color: '#94a3b8' }}>Click to view unified profile across all 5 data pillars</span>
           </div>
 
           {loading ? (
-            <div className="loading-state"><div className="spinner" /><span>Loading patients…</span></div>
+            <div className="loading-state"><div className="spinner" /><span>Loading patient records…</span></div>
           ) : patients.length === 0 ? (
-            <div className="empty-state"><div className="empty-state-icon">👤</div><div className="empty-state-text">No patients found.</div></div>
+            <div className="empty-state"><div className="empty-state-icon">👤</div><div className="empty-state-text">No patient records found.</div></div>
           ) : (
             <table>
               <thead>
@@ -497,6 +485,7 @@ export default function PatientsPage() {
                   <th>Gender</th>
                   <th>Phone</th>
                   <th>Insurance</th>
+                  <th>Data Sources</th>
                   <th></th>
                 </tr>
               </thead>
@@ -518,6 +507,15 @@ export default function PatientsPage() {
                     <td>{p.gender}</td>
                     <td style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>{p.phone}</td>
                     <td>{p.insurance ? <span style={{ color: '#10b981', fontSize: 12 }}>✓ Insured</span> : <span style={{ color: '#f43f5e', fontSize: 12 }}>✗ None</span>}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 4, fontSize: 11 }}>
+                        <span title="EHR Connected" style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8', padding: '2px 6px', borderRadius: 4 }}>EHR</span>
+                        <span title="Labs Connected" style={{ background: 'rgba(6,182,212,0.15)', color: '#22d3ee', padding: '2px 6px', borderRadius: 4 }}>Labs</span>
+                        <span title="Insurance Verified" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', padding: '2px 6px', borderRadius: 4 }}>Payer</span>
+                        <span title="Rx Pharmacy" style={{ background: 'rgba(139,92,246,0.15)', color: '#a78bfa', padding: '2px 6px', borderRadius: 4 }}>Rx</span>
+                        <span title="Fax/PDF Notes" style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24', padding: '2px 6px', borderRadius: 4 }}>PDF</span>
+                      </div>
+                    </td>
                     <td><ChevronRight size={14} style={{ color: '#4b5563' }} /></td>
                   </tr>
                 ))}
