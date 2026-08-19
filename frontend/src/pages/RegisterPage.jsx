@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../api/services';
+import { useAuth } from '../context/AuthContext';
 
 const ROLES = ['Doctor', 'CareCoordinator', 'Admin'];
 
-// Maps raw backend error strings to friendly, specific messages
 function parseRegisterError(err) {
   const detail = err.response?.data?.detail || '';
   const status = err.response?.status;
@@ -22,6 +22,7 @@ function parseRegisterError(err) {
 }
 
 export default function RegisterPage() {
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ username: '', email: '', password: '', role: 'Doctor' });
   const [error, setError] = useState('');
@@ -32,8 +33,11 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
+      // 1. Register user
       await authApi.register(form);
-      navigate('/login');
+      // 2. Immediately log in and open dashboard directly
+      await login({ username: form.username, password: form.password });
+      navigate('/dashboard');
     } catch (err) {
       setError(parseRegisterError(err));
     } finally {
