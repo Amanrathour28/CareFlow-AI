@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/patients', label: 'Patients', icon: Users },
   { to: '/referrals', label: 'Referrals', icon: FileText },
   { to: '/tasks', label: 'Tasks', icon: CheckSquare },

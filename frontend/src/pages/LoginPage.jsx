@@ -32,7 +32,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(form);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(parseLoginError(err));
     } finally {
