@@ -449,7 +449,7 @@ const [loading, setLoading] = useState(true);
           <h1 className="page-title">Patient Records (Unified Healthcare Data)</h1>
           <p className="page-subtitle">{total} unified patient files across EHR, Labs, Insurance & Pharmacy</p>
         </div>
-        {canWrite && (
+        {canCreate && (
           <button className="btn btn-primary" onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Plus size={16} /> Add Patient File
           </button>
