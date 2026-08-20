@@ -57,3 +57,15 @@ class OTPRequest(BaseModel):
 class OTPVerify(BaseModel):
     email: str = Field(..., description="Gmail ID or email")
     otp: str = Field(..., min_length=6, max_length=6, description="6-digit verification code")
+
+class ForgotPasswordRequest(BaseModel):
+    username_or_email: str = Field(..., description="Username or Gmail address")
+
+class ResetPasswordRequest(BaseModel):
+    email: str = Field(..., description="Registered email address")
+    otp: str = Field(..., min_length=6, max_length=6, description="6-digit verification code")
+    new_password: str = Field(..., min_length=6, max_length=100, description="New plaintext password")
+
+class ChangePasswordRequest(BaseModel):
+    current_password: Optional[str] = Field(None, description="Current plaintext password")
+    new_password: str = Field(..., min_length=6, max_length=100, description="New plaintext password")

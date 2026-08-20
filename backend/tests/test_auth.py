@@ -218,3 +218,92 @@ def test_role_based_access_control(client):
     res_coord_ok = client.get("/test-coordinator-only", headers={"Authorization": f"Bearer {coord_token}"})
     assert res_coord_ok.status_code == status.HTTP_200_OK
     assert res_coord_ok.json()["message"] == "Coordinator authorized"
+
+
+def test_forgot_password_flow(client):
+    # Register user
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "username": "forgot_user",
+            "email": "forgot_user@careflow.ai",
+            "password": "initialpassword123",
+            "role": "Doctor"
+        }
+    )
+
+    # 1. Request OTP using username
+    res_otp = client.post(
+        "/api/v1/auth/forgot-password/send-otp",
+        json={"username_or_email": "forgot_user"}
+    )
+    assert res_otp.status_code == status.HTTP_200_OK
+    otp_data = res_otp.json()
+    assert "otp" in otp_data
+    otp_code = otp_data["otp"]
+    email = otp_data["email"]
+
+    # 2. Reset password with valid OTP
+    res_reset = client.post(
+        "/api/v1/auth/forgot-password/reset",
+        json={
+            "email": email,
+            "otp": otp_code,
+            "new_password": "newresetpassword123"
+        }
+    )
+    assert res_reset.status_code == status.HTTP_200_OK
+    assert res_reset.json()["success"] is True
+
+    # 3. Old password should now fail
+    res_old_login = client.post(
+        "/api/v1/auth/login",
+        json={"username": "forgot_user", "password": "initialpassword123"}
+    )
+    assert res_old_login.status_code == status.HTTP_401_UNAUTHORIZED
+
+    # 4. New password succeeds
+    res_new_login = client.post(
+        "/api/v1/auth/login",
+        json={"username": "forgot_user", "password": "newresetpassword123"}
+    )
+    assert res_new_login.status_code == status.HTTP_200_OK
+    assert "access_token" in res_new_login.json()
+
+
+def test_change_password_flow(client):
+    # Register and login
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "username": "changepass_user",
+            "email": "changepass@careflow.ai",
+            "password": "originalpass123",
+            "role": "CareCoordinator"
+        }
+    )
+    login_res = client.post(
+        "/api/v1/auth/login",
+        json={"username": "changepass_user", "password": "originalpass123"}
+    )
+    token = login_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Change password
+    change_res = client.post(
+        "/api/v1/auth/change-password",
+        headers=headers,
+        json={
+            "current_password": "originalpass123",
+            "new_password": "brandnewpassword456"
+        }
+    )
+    assert change_res.status_code == status.HTTP_200_OK
+    assert change_res.json()["success"] is True
+
+    # Verify login with new password
+    verify_login = client.post(
+        "/api/v1/auth/login",
+        json={"username": "changepass_user", "password": "brandnewpassword456"}
+    )
+    assert verify_login.status_code == status.HTTP_200_OK

@@ -161,12 +161,18 @@ export default function LoginPage() {
 
             {!useOtpLogin && (
               <div className="input-group">
-                <label className="input-label">Password</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label className="input-label" style={{ marginBottom: 0 }}>Password</label>
+                  <Link to="/forgot-password" style={{ color: 'var(--cyan-accent)', fontSize: 11, textDecoration: 'none', fontWeight: 500 }}>
+                    Forgot password?
+                  </Link>
+                </div>
                 <input
                   type="password"
                   placeholder="Enter your password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  style={{ marginTop: 4 }}
                   required
                 />
               </div>

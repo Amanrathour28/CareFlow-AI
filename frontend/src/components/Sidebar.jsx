@@ -1,17 +1,19 @@
+import { useState } from 'react';
 import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  LayoutDashboard, Users, FileText, CheckSquare, LogOut, Activity, UserCheck, ShieldCheck
+  LayoutDashboard, Users, FileText, CheckSquare, LogOut, Activity, UserCheck, ShieldCheck, KeyRound
 } from 'lucide-react';
 
-import { useState } from 'react';
 import NotificationBell from './NotificationBell';
 import DemoFlowModal from './DemoFlowModal';
+import ProfileModal from './ProfileModal';
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -41,6 +43,7 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <DemoFlowModal isOpen={isDemoModalOpen} onClose={() => setIsDemoModalOpen(false)} />
+      <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
       
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: 12 }}>
         <Link to="/dashboard" className="sidebar-logo" title="CareFlow AI Dashboard" style={{ textDecoration: 'none', color: 'inherit', display: 'block', cursor: 'pointer' }}>
@@ -103,18 +106,29 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="user-badge">
+        <div 
+          className="user-badge"
+          style={{ cursor: 'pointer', transition: 'background 0.2s ease' }}
+          title="Click to view Profile & Security / Change Password"
+          onClick={() => setIsProfileModalOpen(true)}
+        >
           <div className="user-avatar" style={{ background: roleBadgeColor }}>{initials}</div>
           <div className="user-info">
-            <div className="user-name">{user?.username ?? 'User'}</div>
+            <div className="user-name" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              {user?.username ?? 'User'}
+              <KeyRound size={11} style={{ color: '#94a3b8' }} />
+            </div>
             <div className="user-role" style={{ color: roleBadgeColor, fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               {role}
             </div>
           </div>
           <button
-            onClick={handleLogout}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleLogout();
+            }}
             title="Sign out"
-            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563', display: 'flex', alignItems: 'center' }}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center' }}
           >
             <LogOut size={15} />
           </button>

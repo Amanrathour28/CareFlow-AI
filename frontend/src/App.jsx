@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import PatientsPage from './pages/PatientsPage';
 import ReferralsPage from './pages/ReferralsPage';
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/" element={<RootRoute />} />
           <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+          <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           
           <Route element={<ProtectedLayout />}>

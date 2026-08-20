@@ -6,11 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.api.deps import get_db, get_current_active_user
 from app.services.auth import auth_service
+from app.repositories.user import user_repository
 from app.schemas.user import (
     UserCreate, UserLogin, UserResponse, Token, TokenUser,
-    OTPRequest, OTPVerify
+    OTPRequest, OTPVerify, ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest
 )
-from app.core.security import create_access_token
+from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.user import User
 
 router = APIRouter()
@@ -92,6 +93,124 @@ def verify_otp(otp_in: OTPVerify):
     return {
         "verified": True,
         "message": "Gmail ID verified successfully!"
+    }
+
+
+@router.post("/forgot-password/send-otp")
+def forgot_password_send_otp(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Generate and send an OTP code for resetting forgotten password."""
+    identifier = req.username_or_email.strip().lower()
+    
+    # Locate user by email or username
+    user = user_repository.get_by_email(db, identifier)
+    if not user:
+        user = user_repository.get_by_username(db, identifier)
+        
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No account found with username or email '{req.username_or_email}'."
+        )
+        
+    user_email = user.email.lower()
+    otp_code = f"{random.randint(100000, 999999)}"
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    
+    OTP_STORE[user_email] = {
+        "otp": otp_code,
+        "expires_at": expires_at,
+        "user_id": str(user.id)
+    }
+    
+    return {
+        "message": f"Password reset verification OTP sent to {user_email}",
+        "email": user_email,
+        "username": user.username,
+        "otp": otp_code
+    }
+
+
+@router.post("/forgot-password/reset")
+def forgot_password_reset(req: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Reset user password using verified 6-digit OTP code."""
+    email = req.email.strip().lower()
+    record = OTP_STORE.get(email)
+    
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No password reset request found for this email. Please request an OTP first."
+        )
+        
+    if datetime.utcnow() > record["expires_at"]:
+        del OTP_STORE[email]
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset OTP has expired. Please request a new verification code."
+        )
+        
+    if record["otp"] != req.otp.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect 6-digit verification code. Please check and try again."
+        )
+        
+    user = user_repository.get_by_email(db, email)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User account not found."
+        )
+        
+    if len(req.new_password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 6 characters long."
+        )
+        
+    user.hashed_password = get_password_hash(req.new_password)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    # Remove consumed OTP
+    if email in OTP_STORE:
+        del OTP_STORE[email]
+        
+    return {
+        "success": True,
+        "message": "Your password has been successfully reset! You can now log in."
+    }
+
+
+@router.post("/change-password")
+def change_password(
+    req: ChangePasswordRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Change or update password from within any user profile."""
+    if req.current_password:
+        if not verify_password(req.current_password, current_user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password does not match. Please try again."
+            )
+            
+    if len(req.new_password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be at least 6 characters long."
+        )
+        
+    current_user.hashed_password = get_password_hash(req.new_password)
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+    
+    return {
+        "success": True,
+        "message": "Password updated successfully!"
     }
 
 
