@@ -8,8 +8,20 @@ from app.models.document import Document
 from app.models.patient import Patient
 from app.models.user import User
 
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+def get_upload_dir() -> str:
+    is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or os.environ.get("LAMBDA_TASK_ROOT"))
+    if is_serverless or (os.name != "nt" and os.path.exists("/tmp")):
+        target_dir = "/tmp/careflow_uploads"
+    else:
+        target_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")
+    
+    try:
+        os.makedirs(target_dir, exist_ok=True)
+    except OSError:
+        pass
+    return target_dir
+
+UPLOAD_DIR = get_upload_dir()
 
 class DocumentService:
     def upload_document(

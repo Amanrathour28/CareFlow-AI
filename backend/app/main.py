@@ -7,10 +7,9 @@ from app.api import auth, patients, referrals, ai, tasks, dashboard, users, audi
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Run database table creation on startup (idempotent — safe to run every boot)."""
-    from app.database.session import engine
-    from app.database.base import Base
-    Base.metadata.create_all(bind=engine)
+    """Run database table creation and demo seeding on startup (idempotent — safe to run every boot)."""
+    from app.database.session import init_db
+    init_db()
     yield
 
 
@@ -19,22 +18,15 @@ app = FastAPI(
     description="CareFlow AI - Healthcare Referral & Prior Authorization Intelligence Platform API",
     version="1.0.0",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    docs_url="/docs",
+    redoc_url="/redoc",
     lifespan=lifespan,
 )
 
-# Configure CORS Middleware
-allowed_origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-if settings.FRONTEND_URL:
-    allowed_origins.append(settings.FRONTEND_URL)
-
+# Universal CORS Middleware for local dev, preview branches, and production domains
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origin_regex=r"^https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,5 +56,7 @@ def read_root():
 
 
 @app.get("/health")
+@app.get("/api/health")
+@app.get(f"{settings.API_V1_STR}/health")
 def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy", "service": "CareFlow AI Backend"}

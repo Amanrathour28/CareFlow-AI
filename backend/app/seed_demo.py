@@ -18,13 +18,17 @@ from app.models.document import Document
 from app.core.security import get_password_hash
 
 def seed_demo_data():
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE patients ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;"))
-        conn.execute(text("ALTER TABLE patients ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;"))
-        conn.execute(text("ALTER TABLE referrals ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;"))
-        conn.execute(text("ALTER TABLE referrals ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;"))
-        conn.execute(text("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS title VARCHAR(150);"))
-        conn.execute(text("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;"))
+    if engine.dialect.name == "postgresql":
+        with engine.begin() as conn:
+            try:
+                conn.execute(text("ALTER TABLE patients ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;"))
+                conn.execute(text("ALTER TABLE patients ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;"))
+                conn.execute(text("ALTER TABLE referrals ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;"))
+                conn.execute(text("ALTER TABLE referrals ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;"))
+                conn.execute(text("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS title VARCHAR(150);"))
+                conn.execute(text("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;"))
+            except Exception:
+                pass
 
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
