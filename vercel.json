@@ -1,58 +1,30 @@
 {
-  "version": 2,
-  "builds": [
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "rewrites": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python"
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
     },
     {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "api/index.py"
+      "source": "/health",
+      "destination": "/api/index.py"
     },
     {
-      "src": "/health",
-      "dest": "api/index.py"
+      "source": "/docs",
+      "destination": "/api/index.py"
     },
     {
-      "src": "/docs",
-      "dest": "api/index.py"
+      "source": "/openapi.json",
+      "destination": "/api/index.py"
     },
     {
-      "src": "/openapi.json",
-      "dest": "api/index.py"
+      "source": "/redoc",
+      "destination": "/api/index.py"
     },
     {
-      "src": "/redoc",
-      "dest": "api/index.py"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "frontend/dist/assets/$1"
-    },
-    {
-      "src": "/favicon.svg",
-      "dest": "frontend/dist/favicon.svg"
-    },
-    {
-      "src": "/vite.svg",
-      "dest": "frontend/dist/vite.svg"
-    },
-    {
-      "src": "/(.*\\.(?:js|css|ico|svg|png|jpg|jpeg|gif|webp|woff|woff2|ttf|eot|json|map))",
-      "dest": "frontend/dist/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "frontend/dist/index.html"
+      "source": "/((?!api/|health|docs|openapi.json|redoc).*)",
+      "destination": "/index.html"
     }
   ]
 }
