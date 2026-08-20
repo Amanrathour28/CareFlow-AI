@@ -23,6 +23,9 @@ ADMIN_ONLY = [UserRole.ADMIN.value]
 DOCTOR_AND_ADMIN = [UserRole.ADMIN.value, UserRole.DOCTOR.value]
 
 
+CREATE_PATIENT_ROLES = [UserRole.ADMIN.value, UserRole.DOCTOR.value, UserRole.CAREGIVER.value]
+
+
 @router.get("", response_model=PatientListResponse, dependencies=[Depends(RoleChecker(ALL_ROLES))])
 def list_patients(
     page: int = 1,
@@ -42,7 +45,7 @@ def list_patients(
     return PatientListResponse(items=items, total=total, page=page, size=size)
 
 
-@router.post("", response_model=PatientDetailResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(RoleChecker(ADMIN_ONLY))])
+@router.post("", response_model=PatientDetailResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(RoleChecker(CREATE_PATIENT_ROLES))])
 def create_patient(
     patient_in: PatientCreate,
     current_user: User = Depends(get_current_active_user),
@@ -72,7 +75,7 @@ def get_patient(
     return patient_service.get_patient(db, patient_id=patient.id)
 
 
-@router.put("/{id}", response_model=PatientResponse, dependencies=[Depends(RoleChecker(DOCTOR_AND_ADMIN))])
+@router.put("/{id}", response_model=PatientResponse, dependencies=[Depends(RoleChecker(ALL_ROLES))])
 def update_patient(
     id: uuid.UUID,
     patient_in: PatientUpdate,

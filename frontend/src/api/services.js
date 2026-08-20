@@ -49,3 +49,15 @@ export const tasksApi = {
 export const dashboardApi = {
   metrics: () => api.get('/dashboard/metrics'),
 };
+
+export const documentsApi = {
+  list: (params) => api.get('/documents', { params }),
+  upload: (formData) => api.post('/documents/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+};
+
+export const notificationsApi = {
+  list: () => api.get('/notifications'),
+  markRead: (id) => api.patch(`/notifications/${id}/read`),
+};

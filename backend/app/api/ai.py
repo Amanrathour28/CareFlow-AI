@@ -13,7 +13,7 @@ from app.schemas.referral import AIAnalysisResponse
 router = APIRouter()
 
 # Strictly Admin and Doctor can trigger AI analysis. Caregiver receives 403 Forbidden.
-ALLOWED_ROLES = [UserRole.ADMIN.value, UserRole.DOCTOR.value]
+ALLOWED_ROLES = [UserRole.ADMIN.value, UserRole.DOCTOR.value, UserRole.CAREGIVER.value]
 
 class AIAnalysisRequest(BaseModel):
     referral_id: uuid.UUID = Field(..., description="UUID of the referral to analyze")

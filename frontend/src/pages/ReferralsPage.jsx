@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { referralsApi, patientsApi } from '../api/services';
-import { Plus, X, Loader2, Brain, ChevronRight, AlertCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Plus, X, Loader2, Brain, ChevronRight, AlertCircle, Clock, FileText } from 'lucide-react';
+import ReferralTimeline from '../components/ReferralTimeline';
+import DocumentManager from '../components/DocumentManager';
 
 const STATUS_OPTIONS = ['', 'Pending', 'UnderReview', 'MissingInfo', 'Approved', 'Rejected'];
 const PRIORITY_OPTIONS = ['', 'Low', 'Medium', 'High'];
@@ -63,24 +66,22 @@ function AIPanel({ analysis, error }) {
   );
 }
 
-function ReferralDetailModal({ referral, onClose }) {
+function ReferralDetailModal({ referral, onClose, onUpdated }) {
   const { user } = useAuth();
+  const [currentReferral, setCurrentReferral] = useState(referral);
   const [analysis, setAnalysis] = useState(referral?.ai_analysis || null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [aiError, setAiError] = useState('');
-
-  const canRunAI = user?.role === 'Admin' || user?.role === 'Doctor';
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'timeline' | 'documents'
 
   const runAnalysis = async () => {
-    if (!canRunAI) {
-      setAiError('Access Restricted (HTTP 403): AI Referral Analysis is restricted to Doctor and Admin roles.');
-      return;
-    }
     setAnalyzing(true);
     setAiError('');
     try {
-      const res = await referralsApi.analyze(referral.id);
+      const res = await referralsApi.analyze(currentReferral.id);
       setAnalysis(res.data);
+      if (onUpdated) onUpdated({ ...currentReferral, ai_analysis: res.data });
     } catch (e) {
       setAiError(parseApiError(e));
     } finally {
@@ -88,64 +89,173 @@ function ReferralDetailModal({ referral, onClose }) {
     }
   };
 
+  const handleStatusChange = async (newStatus) => {
+    if (!newStatus || newStatus === currentReferral.status) return;
+    setUpdatingStatus(true);
+    try {
+      const res = await referralsApi.update(currentReferral.id, { status: newStatus });
+      setCurrentReferral(res.data);
+      if (onUpdated) onUpdated(res.data);
+    } catch (e) {
+      alert(parseApiError(e));
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: 650 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">Referral Detail</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className="modal-title">Referral Detail</span>
+            <BadgeStatus status={currentReferral.status} />
+          </div>
           <button className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
-        <div style={{ maxHeight: '75vh', overflowY: 'auto' }}>
-          {/* 5 Unified Data Source Integrity Checks */}
-          <div style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 12, marginBottom: 16 }}>
-            <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
-              Unified Data Sources Audit & Sync Status
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, fontSize: 11, textAlign: 'center' }}>
-              <div style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', padding: 6, borderRadius: 6, color: '#a5b4fc' }}>
-                <div>🏥 EHR</div>
-                <div style={{ fontSize: 9, color: '#10b981', fontWeight: 600 }}>✓ Verified</div>
-              </div>
-              <div style={{ background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.2)', padding: 6, borderRadius: 6, color: '#67e8f9' }}>
-                <div>🧪 Labs</div>
-                <div style={{ fontSize: 9, color: '#10b981', fontWeight: 600 }}>✓ Ingested</div>
-              </div>
-              <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: 6, borderRadius: 6, color: '#6ee7b7' }}>
-                <div>🛡️ Payer</div>
-                <div style={{ fontSize: 9, color: '#f59e0b', fontWeight: 600 }}>⚡ Active Sync</div>
-              </div>
-              <div style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', padding: 6, borderRadius: 6, color: '#c4b5fd' }}>
-                <div>💊 Pharmacy</div>
-                <div style={{ fontSize: 9, color: '#10b981', fontWeight: 600 }}>✓ Verified</div>
-              </div>
-              <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', padding: 6, borderRadius: 6, color: '#fde68a' }}>
-                <div>📄 Fax/PDF</div>
-                <div style={{ fontSize: 9, color: '#6366f1', fontWeight: 600 }}>🤖 AI Analyzed</div>
-              </div>
-            </div>
-          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-            {[
-              ['Diagnosis Code', referral.diagnosis_code],
-              ['Status', <BadgeStatus status={referral.status} />],
-              ['Priority', <BadgePriority priority={referral.priority} />],
-              ['Insurance Provider', referral.insurance_provider],
-              ['Requested Procedure', referral.requested_procedure],
-              ['Created', new Date(referral.created_at).toLocaleDateString()],
-            ].map(([label, value]) => (
-              <div key={label} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '10px 14px' }}>
-                <div style={{ fontSize: 10, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 4 }}>{label}</div>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>{value}</div>
+        {/* Tab Navigation */}
+        <div style={{ display: 'flex', gap: 6, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8, marginBottom: 16 }}>
+          <button
+            onClick={() => setActiveTab('overview')}
+            style={{
+              background: activeTab === 'overview' ? '#3b82f6' : 'transparent',
+              color: activeTab === 'overview' ? '#fff' : '#94a3b8',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 12px',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              fontWeight: 600
+            }}
+          >
+            Overview & AI Triage
+          </button>
+          <button
+            onClick={() => setActiveTab('timeline')}
+            style={{
+              background: activeTab === 'timeline' ? '#3b82f6' : 'transparent',
+              color: activeTab === 'timeline' ? '#fff' : '#94a3b8',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 12px',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              fontWeight: 600
+            }}
+          >
+            <Clock size={13} /> Timeline
+          </button>
+          <button
+            onClick={() => setActiveTab('documents')}
+            style={{
+              background: activeTab === 'documents' ? '#3b82f6' : 'transparent',
+              color: activeTab === 'documents' ? '#fff' : '#94a3b8',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 12px',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              fontWeight: 600
+            }}
+          >
+            <FileText size={13} /> Attachments
+          </button>
+        </div>
+
+        <div style={{ maxHeight: '75vh', overflowY: 'auto' }}>
+          {activeTab === 'timeline' ? (
+            <ReferralTimeline timeline={currentReferral.timeline_events || []} />
+          ) : activeTab === 'documents' ? (
+            <DocumentManager patientId={currentReferral.patient_id} referralId={currentReferral.id} />
+          ) : (
+            <>
+              {/* 5 Unified Data Source Integrity Checks */}
+              <div style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 12, marginBottom: 16 }}>
+                <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                  Unified Data Sources Audit & Sync Status
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, fontSize: 11, textAlign: 'center' }}>
+                  <div style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', padding: 6, borderRadius: 6, color: '#a5b4fc' }}>
+                    <div>🏥 EHR</div>
+                    <div style={{ fontSize: 9, color: '#10b981', fontWeight: 600 }}>✓ Verified</div>
+                  </div>
+                  <div style={{ background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.2)', padding: 6, borderRadius: 6, color: '#67e8f9' }}>
+                    <div>🧪 Labs</div>
+                    <div style={{ fontSize: 9, color: '#10b981', fontWeight: 600 }}>✓ Ingested</div>
+                  </div>
+                  <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: 6, borderRadius: 6, color: '#6ee7b7' }}>
+                    <div>🛡️ Payer</div>
+                    <div style={{ fontSize: 9, color: '#f59e0b', fontWeight: 600 }}>⚡ Active Sync</div>
+                  </div>
+                  <div style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', padding: 6, borderRadius: 6, color: '#c4b5fd' }}>
+                    <div>💊 Pharmacy</div>
+                    <div style={{ fontSize: 9, color: '#10b981', fontWeight: 600 }}>✓ Verified</div>
+                  </div>
+                  <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', padding: 6, borderRadius: 6, color: '#fde68a' }}>
+                    <div>📄 Fax/PDF</div>
+                    <div style={{ fontSize: 9, color: '#6366f1', fontWeight: 600 }}>🤖 AI Analyzed</div>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-            <button className="btn btn-primary" onClick={runAnalysis} disabled={analyzing} style={{ gap: 6 }}>
-              {analyzing ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Analyzing…</> : <><Brain size={14} /> Run AI Analysis</>}
-            </button>
-          </div>
-          <AIPanel analysis={analysis} error={aiError} />
+
+              {/* Status Transition Control */}
+              <div style={{ background: 'rgba(30,41,59,0.6)', borderRadius: 8, padding: '10px 14px', marginBottom: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>Workflow Status Transition:</span>
+                <select
+                  value={currentReferral.status}
+                  disabled={updatingStatus}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  style={{
+                    background: '#0f172a',
+                    color: '#60a5fa',
+                    border: '1px solid rgba(59,130,246,0.4)',
+                    borderRadius: 6,
+                    padding: '4px 8px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="Draft">Draft</option>
+                  <option value="Submitted">Submitted</option>
+                  <option value="UnderReview">Under Review</option>
+                  <option value="MissingInfo">Missing Info</option>
+                  <option value="ReadyForAuthorization">Ready For Authorization</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                {[
+                  ['Diagnosis Code', currentReferral.diagnosis_code],
+                  ['Status', <BadgeStatus status={currentReferral.status} />],
+                  ['Priority', <BadgePriority priority={currentReferral.priority} />],
+                  ['Insurance Provider', currentReferral.insurance_provider],
+                  ['Requested Procedure', currentReferral.requested_procedure],
+                  ['Created', new Date(currentReferral.created_at).toLocaleDateString()],
+                ].map(([label, value]) => (
+                  <div key={label} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '10px 14px' }}>
+                    <div style={{ fontSize: 10, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 4 }}>{label}</div>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                <button className="btn btn-primary" onClick={runAnalysis} disabled={analyzing} style={{ gap: 6 }}>
+                  {analyzing ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Analyzing…</> : <><Brain size={14} /> Run AI Analysis</>}
+                </button>
+              </div>
+              <AIPanel analysis={analysis} error={aiError} />
+            </>
+          )}
         </div>
       </div>
     </div>

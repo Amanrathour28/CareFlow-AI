@@ -9,7 +9,7 @@ from app.services.quality_engine import check_referral_quality
 
 router = APIRouter()
 
-ALL_ROLES = [UserRole.ADMIN.value, UserRole.DOCTOR.value, UserRole.CAREGIVER.value]
+ALL_ROLES = [UserRole.ADMIN.value, UserRole.DOCTOR.value, UserRole.CAREGIVER.value, UserRole.CARE_COORDINATOR.value, "CareCoordinator"]
 
 @router.get("/metrics", dependencies=[Depends(RoleChecker(ALL_ROLES))])
 def get_metrics(
@@ -20,11 +20,12 @@ def get_metrics(
     Retrieve real-time metrics for the healthcare dashboard.
     Enforces role-based query filtering so non-admin users only receive authorized stats.
     """
-    patient_filter = None
-    if current_user.role == UserRole.DOCTOR.value:
+    if current_user.role == UserRole.ADMIN.value:
+        patient_filter = None
+    elif current_user.role in [UserRole.DOCTOR.value, "Doctor"]:
         patient_filter = or_(Patient.assigned_doctor_id == current_user.id, Patient.assigned_doctor_id.is_(None))
-    elif current_user.role == UserRole.CAREGIVER.value:
-        patient_filter = Patient.assigned_caregiver_id == current_user.id
+    else:
+        patient_filter = or_(Patient.assigned_caregiver_id == current_user.id, Patient.assigned_caregiver_id.is_(None))
 
     patient_stmt = select(func.count(Patient.id))
     if patient_filter is not None:

@@ -16,7 +16,7 @@ from app.schemas.task import (
 router = APIRouter()
 
 ALL_ROLES = [UserRole.ADMIN.value, UserRole.DOCTOR.value, UserRole.CAREGIVER.value]
-CREATE_ROLES = [UserRole.ADMIN.value, UserRole.DOCTOR.value]
+CREATE_ROLES = [UserRole.ADMIN.value, UserRole.DOCTOR.value, UserRole.CAREGIVER.value]
 
 
 @router.get("", response_model=TaskListResponse, dependencies=[Depends(RoleChecker(ALL_ROLES))])

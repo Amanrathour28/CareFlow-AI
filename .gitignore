@@ -43,6 +43,10 @@ frontend/dist/
 frontend/dist-ssr/
 *.local
 
+# ---- Uploads / Media ----
+uploads/
+backend/uploads/
+
 # ---- Logs ----
 *.log
 logs/

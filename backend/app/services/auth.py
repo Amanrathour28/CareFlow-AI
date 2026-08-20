@@ -35,8 +35,7 @@ class AuthService:
         if user_repository.get_by_email(db, user_in.email):
             raise ValueError("Email already registered")
             
-        # Validate role
-        valid_roles = {"Admin", "Doctor", "CareCoordinator"}
+        valid_roles = {"Admin", "Doctor", "Caregiver", "CareCoordinator"}
         if user_in.role not in valid_roles:
             raise ValueError(f"Invalid role. Must be one of: {', '.join(valid_roles)}")
             

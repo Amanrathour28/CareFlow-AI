@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { tasksApi, referralsApi } from '../api/services';
-import { Plus, X, ChevronRight, AlertCircle } from 'lucide-react';
+import { Plus, X, ChevronRight, AlertCircle, LayoutGrid, List } from 'lucide-react';
+import TaskKanban from '../components/TaskKanban';
 
 const STATUS_OPTIONS = ['', 'Pending', 'InProgress', 'Completed'];
 
@@ -179,6 +180,7 @@ export default function TasksPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'table'
   const PAGE_SIZE = 20;
 
   const fetchTasks = async () => {
@@ -203,6 +205,15 @@ export default function TasksPage() {
     setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
   };
 
+  const handleKanbanStatusUpdate = async (taskId, newStatus) => {
+    try {
+      const res = await tasksApi.update(taskId, { status: newStatus });
+      handleSaved(res.data);
+    } catch (err) {
+      alert(parseApiError(err));
+    }
+  };
+
   return (
     <>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -210,9 +221,48 @@ export default function TasksPage() {
           <h1 className="page-title">Follow-up Tasks</h1>
           <p className="page-subtitle">{total} tasks in system</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Plus size={16} /> New Task
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.7)', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }}>
+            <button
+              onClick={() => setViewMode('kanban')}
+              style={{
+                background: viewMode === 'kanban' ? '#3b82f6' : 'transparent',
+                color: viewMode === 'kanban' ? '#fff' : '#94a3b8',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: 6,
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4
+              }}
+            >
+              <LayoutGrid size={14} /> Kanban Board
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              style={{
+                background: viewMode === 'table' ? '#3b82f6' : 'transparent',
+                color: viewMode === 'table' ? '#fff' : '#94a3b8',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: 6,
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4
+              }}
+            >
+              <List size={14} /> Table View
+            </button>
+          </div>
+
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Plus size={16} /> New Task
+          </button>
+        </div>
       </div>
 
       <div className="page-content">
@@ -222,23 +272,25 @@ export default function TasksPage() {
           </select>
         </div>
 
-        <div className="table-card">
-          <div className="table-header">
-            <span className="table-title">Task Queue</span>
-            <span style={{ fontSize: 12, color: '#94a3b8' }}>Click a task to update its status</span>
+        {loadError && (
+          <div className="auth-error" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 16 }}>
+            <AlertCircle size={14} />{loadError}
           </div>
+        )}
 
-          {loadError && (
-            <div className="auth-error" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 16 }}>
-              <AlertCircle size={14} />{loadError}
+        {loading ? (
+          <div className="loading-state"><div className="spinner" /><span>Loading tasks…</span></div>
+        ) : tasks.length === 0 && !loadError ? (
+          <div className="empty-state"><div className="empty-state-icon">✅</div><div className="empty-state-text">No tasks found. Click "New Task" to create a follow-up task.</div></div>
+        ) : viewMode === 'kanban' ? (
+          <TaskKanban tasks={tasks} onUpdateStatus={handleKanbanStatusUpdate} />
+        ) : (
+          <div className="table-card">
+            <div className="table-header">
+              <span className="table-title">Task Queue</span>
+              <span style={{ fontSize: 12, color: '#94a3b8' }}>Click a task to update its status</span>
             </div>
-          )}
 
-          {loading ? (
-            <div className="loading-state"><div className="spinner" /><span>Loading tasks…</span></div>
-          ) : tasks.length === 0 && !loadError ? (
-            <div className="empty-state"><div className="empty-state-icon">✅</div><div className="empty-state-text">No tasks found. Click "New Task" to create a follow-up task.</div></div>
-          ) : (
             <table>
               <thead>
                 <tr>
@@ -263,8 +315,8 @@ export default function TasksPage() {
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
+          </div>
+        )}
 
         {total > PAGE_SIZE && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>

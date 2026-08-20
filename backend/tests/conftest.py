@@ -70,7 +70,7 @@ def auth_headers(client):
 
     client.post(
         "/api/v1/auth/register",
-        json={"username": "coord_p", "email": "coord_p@careflow.ai", "password": "coordpassword", "role": "CareCoordinator"}
+        json={"username": "coord_p", "email": "coord_p@careflow.ai", "password": "coordpassword", "role": "Caregiver"}
     )
     coord_login = client.post("/api/v1/auth/login", json={"username": "coord_p", "password": "coordpassword"}).json()
     coord_token = coord_login["access_token"]

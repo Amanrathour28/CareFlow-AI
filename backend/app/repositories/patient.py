@@ -18,12 +18,14 @@ class PatientRepository:
         statement = select(Patient)
 
         # Database Query-Level Access Filtering based on Role & Assignment
-        if user.role == UserRole.DOCTOR.value:
+        if user.role in [UserRole.DOCTOR.value, "Doctor"]:
             statement = statement.where(
                 or_(Patient.assigned_doctor_id == user.id, Patient.assigned_doctor_id.is_(None))
             )
-        elif user.role == UserRole.CAREGIVER.value:
-            statement = statement.where(Patient.assigned_caregiver_id == user.id)
+        elif user.role in [UserRole.CAREGIVER.value, UserRole.CARE_COORDINATOR.value, "Caregiver", "CareCoordinator"]:
+            statement = statement.where(
+                or_(Patient.assigned_caregiver_id == user.id, Patient.assigned_caregiver_id.is_(None))
+            )
 
         if search:
             search_filter = f"%{search}%"
@@ -42,12 +44,14 @@ class PatientRepository:
         """Count total patients accessible to the user."""
         statement = select(func.count(Patient.id))
 
-        if user.role == UserRole.DOCTOR.value:
+        if user.role in [UserRole.DOCTOR.value, "Doctor"]:
             statement = statement.where(
                 or_(Patient.assigned_doctor_id == user.id, Patient.assigned_doctor_id.is_(None))
             )
-        elif user.role == UserRole.CAREGIVER.value:
-            statement = statement.where(Patient.assigned_caregiver_id == user.id)
+        elif user.role in [UserRole.CAREGIVER.value, UserRole.CARE_COORDINATOR.value, "Caregiver", "CareCoordinator"]:
+            statement = statement.where(
+                or_(Patient.assigned_caregiver_id == user.id, Patient.assigned_caregiver_id.is_(None))
+            )
 
         if search:
             search_filter = f"%{search}%"

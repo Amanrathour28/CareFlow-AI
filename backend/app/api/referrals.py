@@ -16,9 +16,9 @@ from app.schemas.referral import (
 router = APIRouter()
 
 # Authorizations
-ALL_ROLES = ["Admin", "Doctor", "CareCoordinator"]
-WRITE_ROLES = ["Admin", "Doctor", "CareCoordinator"]
-PATCH_ROLES = ["Admin", "CareCoordinator"]
+ALL_ROLES = ["Admin", "Doctor", "Caregiver", "CareCoordinator"]
+WRITE_ROLES = ["Admin", "Doctor", "Caregiver", "CareCoordinator"]
+PATCH_ROLES = ["Admin", "Caregiver", "CareCoordinator"]
 ADMIN_ONLY = ["Admin"]
 
 @router.get("", response_model=ReferralListResponse, dependencies=[Depends(RoleChecker(ALL_ROLES))])

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { patientsApi } from '../api/services';
 import { useAuth } from '../context/AuthContext';
 import { Search, ChevronRight, X, ShieldCheck, Pill, FlaskConical, Plus, Trash2, FileText, Database, Layers } from 'lucide-react';
+import DocumentManager from '../components/DocumentManager';
 
 function QualityBar({ score }) {
   const color = score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#f43f5e';
@@ -118,6 +119,9 @@ function PatientDetailModal({ patient, onClose }) {
               {patient.medical_history_summary || 'Clinical notes from referring provider and incoming fax documents.'}
             </div>
           </div>
+
+          {/* Document Attachments Manager */}
+          <DocumentManager patientId={patient.id} />
         </div>
       </div>
     </div>

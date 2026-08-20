@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.referral import Referral
@@ -118,26 +118,45 @@ def _run_groq_analysis(referral: Referral) -> Dict[str, Any]:
     return result
 
 
+from app.models.ai_analysis_history import AIAnalysisHistory
+from app.models.user import User
+
 class AIAgentService:
-    def analyze_referral(self, db: Session, referral: Referral) -> Dict[str, Any]:
+    def analyze_referral(self, db: Session, referral: Referral, user: Optional[User] = None) -> Dict[str, Any]:
         """
         Gathers context and runs AI analysis. Falls back to mock rules if Groq API key is missing.
-        Saves the analysis on the Referral model in the db.
+        Saves analysis on Referral model AND appends a record in AIAnalysisHistory.
         """
+        used_fallback = False
         if not settings.GROQ_API_KEY:
             analysis = _generate_mock_analysis(referral)
+            used_fallback = True
         else:
             try:
                 analysis = _run_groq_analysis(referral)
             except Exception as e:
-                # Log and fallback silently to mock logic to preserve user workflow resilience
                 import sys
                 print(f"Groq API call error: {e}", file=sys.stderr)
                 analysis = _generate_mock_analysis(referral)
-                
+                used_fallback = True
+
         # Save directly on the referral JSON column
         referral.ai_analysis = analysis
         db.add(referral)
+
+        # Create history entry
+        history_entry = AIAnalysisHistory(
+            referral_id=referral.id,
+            triggered_by_user_id=user.id if user else None,
+            ai_provider="Groq" if not used_fallback else "HeuristicFallback",
+            model_name="llama3-8b-8192" if not used_fallback else "RuleEngine-v1",
+            analysis_version="v1.0",
+            used_fallback=used_fallback,
+            completeness_score=int(analysis.get("completeness_score", 80)),
+            confidence=float(analysis.get("confidence", 0.9)),
+            analysis_result=analysis
+        )
+        db.add(history_entry)
         db.commit()
         db.refresh(referral)
         return referral.ai_analysis

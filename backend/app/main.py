@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api import auth, patients, referrals, ai, tasks, dashboard, users, audit, assignments
+from app.api import auth, patients, referrals, ai, tasks, dashboard, users, audit, assignments, documents, notifications
 
 
 @asynccontextmanager
@@ -50,6 +50,8 @@ app.include_router(tasks.router, prefix=f"{settings.API_V1_STR}/tasks", tags=["T
 app.include_router(dashboard.router, prefix=f"{settings.API_V1_STR}/dashboard", tags=["Dashboard"])
 app.include_router(audit.router, prefix=f"{settings.API_V1_STR}/audit-logs", tags=["Audit Logs"])
 app.include_router(assignments.router, prefix=f"{settings.API_V1_STR}/assignments", tags=["Assignments"])
+app.include_router(documents.router, prefix=f"{settings.API_V1_STR}/documents", tags=["Documents"])
+app.include_router(notifications.router, prefix=f"{settings.API_V1_STR}/notifications", tags=["Notifications"])
 
 
 @app.get("/")

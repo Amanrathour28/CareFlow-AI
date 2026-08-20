@@ -4,9 +4,14 @@ import {
   LayoutDashboard, Users, FileText, CheckSquare, LogOut, Activity, UserCheck, ShieldCheck
 } from 'lucide-react';
 
+import { useState } from 'react';
+import NotificationBell from './NotificationBell';
+import DemoFlowModal from './DemoFlowModal';
+
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -35,15 +40,43 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
-      <Link to="/dashboard" className="sidebar-logo" title="CareFlow AI Dashboard" style={{ textDecoration: 'none', color: 'inherit', display: 'block', cursor: 'pointer' }}>
-        <div className="logo-mark">
-          <div className="logo-icon">🏥</div>
-          <div>
-            <div className="logo-text">CareFlow AI</div>
-            <div className="logo-sub">Healthcare Intelligence</div>
+      <DemoFlowModal isOpen={isDemoModalOpen} onClose={() => setIsDemoModalOpen(false)} />
+      
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: 12 }}>
+        <Link to="/dashboard" className="sidebar-logo" title="CareFlow AI Dashboard" style={{ textDecoration: 'none', color: 'inherit', display: 'block', cursor: 'pointer' }}>
+          <div className="logo-mark">
+            <div className="logo-icon">🏥</div>
+            <div>
+              <div className="logo-text">CareFlow AI</div>
+              <div className="logo-sub">Healthcare Intelligence</div>
+            </div>
           </div>
-        </div>
-      </Link>
+        </Link>
+        <NotificationBell />
+      </div>
+
+      <div style={{ padding: '0 12px 12px 12px' }}>
+        <button
+          onClick={() => setIsDemoModalOpen(true)}
+          style={{
+            width: '100%',
+            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%)',
+            border: '1px solid rgba(59, 130, 246, 0.4)',
+            borderRadius: 8,
+            padding: '8px 12px',
+            color: '#60a5fa',
+            fontWeight: 600,
+            fontSize: '0.8rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6
+          }}
+        >
+          <span>🎯</span> Interview Demo Guide
+        </button>
+      </div>
 
       <nav className="sidebar-nav">
         <div className="nav-section-label">Navigation</div>

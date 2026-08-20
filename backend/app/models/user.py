@@ -10,6 +10,7 @@ class UserRole(str, Enum):
     ADMIN = "Admin"
     DOCTOR = "Doctor"
     CAREGIVER = "Caregiver"
+    CARE_COORDINATOR = "CareCoordinator"
 
 class User(Base):
     __tablename__ = "users"

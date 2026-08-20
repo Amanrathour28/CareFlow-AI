@@ -99,7 +99,7 @@ def verify_patient_access(patient_id: uuid.UUID, db: Session, user: User) -> Pat
         return patient
 
     if user.role == UserRole.CAREGIVER.value:
-        if patient.assigned_caregiver_id != user.id:
+        if patient.assigned_caregiver_id and patient.assigned_caregiver_id != user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access Forbidden: You are not assigned as the caregiver for this patient record."
@@ -125,3 +125,16 @@ def verify_task_access(task_id: uuid.UUID, db: Session, user: User) -> Task:
         )
 
     return task
+
+def verify_referral_access(referral_id: uuid.UUID, db: Session, user: User) -> Referral:
+    """Resource-level verification for Referral modifications and views."""
+    referral = db.get(Referral, referral_id)
+    if not referral or getattr(referral, "is_deleted", False):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Referral record not found")
+
+    if user.role == UserRole.ADMIN.value:
+        return referral
+
+    # Verify patient ownership/assignment for non-admin users
+    verify_patient_access(referral.patient_id, db, user)
+    return referral
