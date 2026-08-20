@@ -2,7 +2,33 @@
 
 **Healthcare Referral & Prior Authorization Intelligence Platform**
 
-A full-stack healthcare coordination platform featuring AI-powered referral analysis, role-based access control, and real-time dashboard metrics.
+A full-stack healthcare coordination platform featuring AI-powered referral analysis, role-based access control, controlled referral workflow engine, document attachments, in-app notifications, task Kanban boards, and real-time dashboard metrics.
+
+---
+
+## 🌟 Key Platform Features
+
+- **Controlled Referral Workflow Engine**: State machine validating state transitions (`Draft` ➔ `Submitted` ➔ `UnderReview` ➔ `MissingInfo` ➔ `ReadyForAuthorization` ➔ `Approved` / `Rejected`).
+- **Audit Timeline**: Timestamped audit trail recording status transition history and user actions per referral.
+- **AI Triage & Historical Logging**: Dual Groq LLM / Rule-based fallback engine recording immutable `AIAnalysisHistory` logs.
+- **Document Management**: Attachment service supporting patient & referral clinical notes, SOAP progress notes, and insurance card scans.
+- **In-App Notification Alerts**: Real-time alert polling and header badge system for pending authorizations and missing information.
+- **Task Kanban Board**: Interactive 4-column drag/update board (`TODO`, `InProgress`, `Blocked`, `Completed`).
+- **Data Quality Engine**: Automated scoring algorithm detecting missing demographic, clinical, or insurance fields.
+- **Role-Based Access Control (RBAC)**: Unified security scoping for `Admin`, `Doctor`, and `Caregiver` / `CareCoordinator` roles.
+- **Interview Demonstration Mode**: Embedded interactive walkthrough guide (`DemoFlowModal`) accessible directly in the UI.
+
+---
+
+## 🔐 Default Demo Accounts
+
+Run `python app/seed_demo.py` in `backend` directory to seed the following demonstration dataset:
+
+| Role | Username | Password | Access Level |
+|---|---|---|---|
+| **Admin** | `admin_demo` | `demopassword123` | System-wide operational dashboard, audit logs, user management |
+| **Doctor** | `dr_house` | `demopassword123` | Assigned patients, referral authorization review, AI triage |
+| **Caregiver** | `caregiver_smith` | `demopassword123` | Patient intake, document upload, task updates |
 
 ---
 
